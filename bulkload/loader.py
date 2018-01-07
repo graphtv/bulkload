@@ -42,8 +42,8 @@ class Loader:
                 return_dict[row['tconst']] = {
                     'id': row['tconst'],
                     'parentId': row['parentTconst'],
-                    'season': row['seasonNumber'],
-                    'episode': row['episodeNumber']
+                    'season': int(-1 if row['seasonNumber'] == '\\N' else row['seasonNumber']),
+                    'episode': int(-1 if row['episodeNumber'] == '\\N' else row['episodeNumber'])
                 }
         elapsed_time = time.time() - start_time
         self._logger.info("Loaded {:,} episodes in {:.2f} seconds.".format(len(return_dict), elapsed_time))
@@ -62,8 +62,8 @@ class Loader:
             for row in tsv_reader:
                 return_dict[row['tconst']] = {
                     'id': row['tconst'],
-                    'rating': row['averageRating'],
-                    'votes': row['numVotes']
+                    'rating': float(row['averageRating']),
+                    'votes': int(row['numVotes'])
                 }
         elapsed_time = time.time() - start_time
         self._logger.info("Loaded {:,} ratings in {:.2f} seconds.".format(len(return_dict), elapsed_time))
