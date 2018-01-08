@@ -19,7 +19,6 @@ class Loader:
             for row in tsv_reader:
                 if row['titleType'].startswith('tv'):
                     return_dict[row['tconst']] = {
-                        'id': row['tconst'],
                         'titleType': row['titleType'],
                         'primaryTitle': row['primaryTitle'],
                         'originalTitle': row['originalTitle']
@@ -39,9 +38,9 @@ class Loader:
         with open(file=filename, mode='rt', newline='', encoding='utf8') as tsvfile:
             tsv_reader = csv.DictReader(f=tsvfile, delimiter='\t')
             for row in tsv_reader:
-                return_dict[row['tconst']] = {
-                    'id': row['tconst'],
-                    'parentId': row['parentTconst'],
+                if row['parentTconst'] not in return_dict:
+                    return_dict[row['parentTconst']] = {}
+                return_dict[row['parentTconst']][row['tconst']] = {
                     'season': int(-1 if row['seasonNumber'] == '\\N' else row['seasonNumber']),
                     'episode': int(-1 if row['episodeNumber'] == '\\N' else row['episodeNumber'])
                 }
@@ -61,7 +60,6 @@ class Loader:
             tsv_reader = csv.DictReader(f=tsvfile, delimiter='\t')
             for row in tsv_reader:
                 return_dict[row['tconst']] = {
-                    'id': row['tconst'],
                     'rating': float(row['averageRating']),
                     'votes': int(row['numVotes'])
                 }

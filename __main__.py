@@ -39,6 +39,7 @@ def main(args=None):
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'w', encoding='utf-8') as f:
         json.dump(ratings, f, ensure_ascii=False, separators=(',', ':'))
     '''
+    '''
     _logger.info("Reading IMDB Exports from JSON: %s", os.path.join(args.source_dir, 'temp'))
     with open(os.path.join(args.source_dir, 'temp', 'titles.json'), 'r', encoding='utf-8') as f:
         titles = json.load(f)
@@ -50,7 +51,15 @@ def main(args=None):
         ratings = json.load(f)
         _logger.info("     Loaded Ratings")
     merger = Merger()
-    merged = merger.merge(titles, episodes, ratings)
+    merged = merger.merge(titles, episodes, ratings, is_compact=True)
+    with open(os.path.join(args.source_dir, 'temp', 'merged.json'), 'w', encoding='utf-8') as f:
+        #json.dump(merged, f, ensure_ascii=False, separators=(',', ':'))
+        json.dump(merged, f, ensure_ascii=False, indent=4, sort_keys=True)
+    '''
+    _logger.info("Reading Merged Ratings from JSON: %s", os.path.join(args.source_dir, 'temp'))
+    with open(os.path.join(args.source_dir, 'temp', 'merged_minimized.json'), 'r', encoding='utf-8') as f:
+        merged = json.load(f)
+        _logger.info("     Loaded Merged Ratings")
     _logger.info("Exited.")
 
 
