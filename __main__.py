@@ -1,6 +1,8 @@
 import argparse
 import sys
 import json
+import boto3
+import zlib
 
 from bulkload import *
 from argparse import RawTextHelpFormatter
@@ -16,6 +18,12 @@ parser.add_argument(
     default=os.environ.get('GRAPHTV_SOURCE_DIR'),
     metavar='GRAPHTV_SOURCE_DIR',
     help='IMDB Export Source Directory'
+)
+parser.add_argument(
+    '--ratings-table',
+    default=os.environ.get('GRAPHTV_RATINGS_TABLE'),
+    metavar='GRAPHTV_RATINGS_TABLE',
+    help='DynamoDB Ratings Table'
 )
 
 def main(args=None):
@@ -60,6 +68,46 @@ def main(args=None):
     with open(os.path.join(args.source_dir, 'temp', 'merged_minimized.json'), 'r', encoding='utf-8') as f:
         merged = json.load(f)
         _logger.info("     Loaded Merged Ratings")
+    print(len(merged))
+    '''
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table(args.ratings_table)
+    with table.batch_writer() as batch:
+        for show_id, show_obj in merged.items():
+            data_json = json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
+            data_zlib = zlib.compress(data_json.encode(), 9)
+            _logger.info("Putting %s: %s", show_id, show_obj['t'])
+            batch.put_item(
+                Item={
+                    'id': show_id,
+                    'data': (data_json if sys.getsizeof(data_json) <= sys.getsizeof(data_zlib) else data_zlib)
+                }
+            )
+    '''
+    '''
+    size_dict = {}
+    for x in range(0, 520):
+        size_dict[x] = 0
+    for show_id, show_obj in merged.items():
+        cur_json = json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
+        cur_comp = zlib.compress(cur_json.encode(), 9)
+        cur_size = sys.getsizeof(cur_comp)
+        cur_size_k = math.ceil(cur_size / 1024)
+        for ep_id, ep_obj in show_obj['l'].items():
+            size_dict[cur_size_k] += (ep_obj['v'] if 'v' in ep_obj else 0)
+    for size_k, vote_count in size_dict.items():
+        print("{}\t{}".format(size_k, vote_count))
+    _logger = delete this line
+    with open(os.path.join(args.source_dir, 'temp', 'final.tsv'), 'w', newline='', encoding='utf-8') as f:
+        fieldnames = ['show', 'data']
+        writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter='\t')
+        writer.writeheader()
+        for show_id, show_obj in merged.items():
+            writer.writerow({
+                'show': show_id,
+                'data': json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
+            })
+    '''
     _logger.info("Exited.")
 
 
