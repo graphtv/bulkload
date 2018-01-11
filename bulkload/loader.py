@@ -18,7 +18,8 @@ class Loader:
             tsv_reader = csv.DictReader(f=tsvfile, delimiter='\t')
             for row in tsv_reader:
                 if row['titleType'].startswith('tv'):
-                    return_dict[row['tconst']] = {
+                    id_b62 = self.to_base62(int(row['tconst'][2:]))
+                    return_dict[id_b62] = {
                         'titleType': row['titleType'],
                         'primaryTitle': row['primaryTitle'],
                         'originalTitle': row['originalTitle']
@@ -38,9 +39,11 @@ class Loader:
         with open(file=filename, mode='rt', newline='', encoding='utf8') as tsvfile:
             tsv_reader = csv.DictReader(f=tsvfile, delimiter='\t')
             for row in tsv_reader:
-                if row['parentTconst'] not in return_dict:
-                    return_dict[row['parentTconst']] = {}
-                return_dict[row['parentTconst']][row['tconst']] = {
+                id_b62 = self.to_base62(int(row['tconst'][2:]))
+                parent_id_b62 = self.to_base62(int(row['parentTconst'][2:]))
+                if parent_id_b62 not in return_dict:
+                    return_dict[parent_id_b62] = {}
+                return_dict[parent_id_b62][id_b62] = {
                     'season': int(-1 if row['seasonNumber'] == '\\N' else row['seasonNumber']),
                     'episode': int(-1 if row['episodeNumber'] == '\\N' else row['episodeNumber'])
                 }
@@ -59,10 +62,18 @@ class Loader:
         with open(file=filename, mode='rt', newline='', encoding='utf8') as tsvfile:
             tsv_reader = csv.DictReader(f=tsvfile, delimiter='\t')
             for row in tsv_reader:
-                return_dict[row['tconst']] = {
+                id_b62 = self.to_base62(int(row['tconst'][2:]))
+                return_dict[id_b62] = {
                     'rating': float(row['averageRating']),
                     'votes': int(row['numVotes'])
                 }
         elapsed_time = time.time() - start_time
         self._logger.info("Loaded {:,} ratings in {:.2f} seconds.".format(len(return_dict), elapsed_time))
         return return_dict
+
+    def to_base62(self, n):
+        convertString = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        if n < 62:
+            return convertString[n]
+        else:
+            return self.to_base62(n // 62) + convertString[n % 62]

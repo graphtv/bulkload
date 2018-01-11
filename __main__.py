@@ -36,18 +36,22 @@ def main(args=None):
         'episode': os.path.join(args.source_dir, 'title.episode.tsv\data.tsv'),
         'ratings': os.path.join(args.source_dir, 'title.ratings.tsv\data.tsv'),
     }
+    
+    # Load data from TSV files
     loader = Loader()
     titles = loader.load_titles(importFiles['title'])
     episodes = loader.load_episodes(importFiles['episode'])
     ratings = loader.load_ratings(importFiles['ratings'])
+    
+    # Export TSV contents to JSON files
     with open(os.path.join(args.source_dir, 'temp', 'titles.json'), 'w', encoding='utf-8') as f:
         json.dump(titles, f, ensure_ascii=False, separators=(',', ':'))
     with open(os.path.join(args.source_dir, 'temp', 'episodes.json'), 'w', encoding='utf-8') as f:
         json.dump(episodes, f, ensure_ascii=False, separators=(',', ':'))
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'w', encoding='utf-8') as f:
         json.dump(ratings, f, ensure_ascii=False, separators=(',', ':'))
-    '''
-    '''
+    
+    # Load Data from JSON files
     _logger.info("Reading IMDB Exports from JSON: %s", os.path.join(args.source_dir, 'temp'))
     with open(os.path.join(args.source_dir, 'temp', 'titles.json'), 'r', encoding='utf-8') as f:
         titles = json.load(f)
@@ -58,46 +62,67 @@ def main(args=None):
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'r', encoding='utf-8') as f:
         ratings = json.load(f)
         _logger.info("     Loaded Ratings")
+    
+    # Merge JSON files into single JSON object with shows, episodes, and ratings
     merger = Merger()
     merged = merger.merge(titles, episodes, ratings, is_compact=True)
     with open(os.path.join(args.source_dir, 'temp', 'merged.json'), 'w', encoding='utf-8') as f:
-        #json.dump(merged, f, ensure_ascii=False, separators=(',', ':'))
+        # Minimized JSON
+        json.dump(merged, f, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
+    with open(os.path.join(args.source_dir, 'temp', 'merged_readable.json'), 'w', encoding='utf-8') as f:
+        # Human Readable JSON
         json.dump(merged, f, ensure_ascii=False, indent=4, sort_keys=True)
-    '''
     _logger.info("Reading Merged Ratings from JSON: %s", os.path.join(args.source_dir, 'temp'))
-    with open(os.path.join(args.source_dir, 'temp', 'merged_minimized.json'), 'r', encoding='utf-8') as f:
+    
+    # Load merged data from JSON file
+    with open(os.path.join(args.source_dir, 'temp', 'merged.json'), 'r', encoding='utf-8') as f:
         merged = json.load(f)
         _logger.info("     Loaded Merged Ratings")
-    print(len(merged))
-    '''
+
+    # Send merged data to DynamoDB
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table(args.ratings_table)
     with table.batch_writer() as batch:
+        last_percent = 0
+        total_shows = len(merged)
+        cur_show_num = 0
         for show_id, show_obj in merged.items():
-            data_json = json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
+            data_json = json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
             data_zlib = zlib.compress(data_json.encode(), 9)
-            _logger.info("Putting %s: %s", show_id, show_obj['t'])
             batch.put_item(
                 Item={
                     'id': show_id,
                     'data': (data_json if sys.getsizeof(data_json) <= sys.getsizeof(data_zlib) else data_zlib)
                 }
             )
-    '''
-    '''
+            '''
+            '''
+            # Print progress output
+            cur_show_num += 1
+            current_percent = math.floor(cur_show_num / total_shows * 100)
+            if current_percent > last_percent:
+                last_percent = current_percent
+                _logger.info("%s/%s (%s%%) Complete...", cur_show_num, total_shows, current_percent)
+                
+    # Misc analysis output trying to gauge sizes of queried data
     size_dict = {}
     for x in range(0, 520):
         size_dict[x] = 0
     for show_id, show_obj in merged.items():
         cur_json = json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
         cur_comp = zlib.compress(cur_json.encode(), 9)
+        #cur_comp = zlib.compress(cur_json.encode(), 6)
+        #cur_comp = zlib.compress(cur_json.encode(), 2)
+        #cur_comp = cur_json
         cur_size = sys.getsizeof(cur_comp)
         cur_size_k = math.ceil(cur_size / 1024)
         for ep_id, ep_obj in show_obj['l'].items():
             size_dict[cur_size_k] += (ep_obj['v'] if 'v' in ep_obj else 0)
     for size_k, vote_count in size_dict.items():
         print("{}\t{}".format(size_k, vote_count))
-    _logger = delete this line
+
+    # Unknown?
+    kdfjk
     with open(os.path.join(args.source_dir, 'temp', 'final.tsv'), 'w', newline='', encoding='utf-8') as f:
         fieldnames = ['show', 'data']
         writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter='\t')
@@ -107,9 +132,16 @@ def main(args=None):
                 'show': show_id,
                 'data': json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
             })
+            
+    # Unknown
+    new_dict = {}
+    for title_id, title_obj in titles.items():
+        new_dict[title_obj['primaryTitle']] = title_id
+    with open(os.path.join(args.source_dir, 'temp', 'only_titles.json'), 'w', encoding='utf-8') as f:
+        json.dump(new_dict, f, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    _logger.info("Done!")
     '''
     _logger.info("Exited.")
-
 
 
 if __name__ == '__main__':

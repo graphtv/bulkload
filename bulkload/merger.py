@@ -22,16 +22,17 @@ class Merger:
             k_rating = 'rating'
             k_votes = 'votes'
         last_percent = 0
+        total_shows = len(titles)
         cur_show_num = 0
         combined = {}
         for show_id, show_obj in titles.items():
             cur_show_num += 1
-            current_percent = math.floor(cur_show_num / len(titles) * 100)
+            current_percent = math.floor(cur_show_num / total_shows * 100)
             if current_percent > last_percent:
                 last_percent = current_percent
-                self._logger.info("%s/%s (%s%%) Complete...", cur_show_num, len(titles), current_percent)
+                self._logger.info("%s/%s (%s%%) Complete...", cur_show_num, total_shows, current_percent)
             '''
-            if show_id != 'tt0903747':
+            if show_id != '3N6z':
                 # Temporarily limit testing to just combining Breaking Bad episodes
                 continue
             '''
@@ -43,11 +44,13 @@ class Merger:
                     k_title: show_obj['primaryTitle'],
                     k_episode_list: {}
                 }
+                vote_count = 0
                 for episode_id, episode_obj in episodes[show_id].items():
                     comb_show[k_episode_list][episode_id] = {}
                     if episode_id in ratings:
                         comb_show[k_episode_list][episode_id][k_rating] = ratings[episode_id]['rating']
                         comb_show[k_episode_list][episode_id][k_votes] = ratings[episode_id]['votes']
+                        vote_count += ratings[episode_id]['votes']
                     '''
                     # Actually just omit these values when they don't exist.
                     # We'll know what it means when they're missing on the client side.
@@ -62,7 +65,9 @@ class Merger:
                         comb_show[k_episode_list][episode_id][k_season] = episode_obj['season']
                     if episode_obj['episode'] != -1:
                         comb_show[k_episode_list][episode_id][k_episode] = episode_obj['episode']
-                combined[show_id] = comb_show
+                # Don't merge any TV Shows that don't have even a single vote
+                if vote_count > 0:
+                    combined[show_id] = comb_show
             else:
                 self._logger.info("How did we get here?")
         return combined
