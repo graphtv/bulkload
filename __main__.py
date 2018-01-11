@@ -73,12 +73,14 @@ def main(args=None):
         # Human Readable JSON
         json.dump(merged, f, ensure_ascii=False, indent=4, sort_keys=True)
     _logger.info("Reading Merged Ratings from JSON: %s", os.path.join(args.source_dir, 'temp'))
+    '''
     
     # Load merged data from JSON file
     with open(os.path.join(args.source_dir, 'temp', 'merged.json'), 'r', encoding='utf-8') as f:
         merged = json.load(f)
         _logger.info("     Loaded Merged Ratings")
 
+    '''
     # Send merged data to DynamoDB
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table(args.ratings_table)
@@ -95,8 +97,6 @@ def main(args=None):
                     'data': (data_json if sys.getsizeof(data_json) <= sys.getsizeof(data_zlib) else data_zlib)
                 }
             )
-            '''
-            '''
             # Print progress output
             cur_show_num += 1
             current_percent = math.floor(cur_show_num / total_shows * 100)
@@ -132,13 +132,15 @@ def main(args=None):
                 'show': show_id,
                 'data': json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
             })
-            
-    # Unknown
+
+    # Create Titles Export
     new_dict = {}
-    for title_id, title_obj in titles.items():
-        new_dict[title_obj['primaryTitle']] = title_id
-    with open(os.path.join(args.source_dir, 'temp', 'only_titles.json'), 'w', encoding='utf-8') as f:
+    for show_id, show_obj in merged.items():
+        new_dict[show_obj['t']] = show_id
+    with open(os.path.join(args.source_dir, 'temp', 'show_titles.json'), 'w', encoding='utf-8') as f:
         json.dump(new_dict, f, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    with open(os.path.join(args.source_dir, 'temp', 'show_titles_readable.json'), 'w', encoding='utf-8') as f:
+        json.dump(new_dict, f, ensure_ascii=False, indent=4, sort_keys=True)
     _logger.info("Done!")
     '''
     _logger.info("Exited.")
