@@ -36,7 +36,7 @@ def main(args=None):
         'episode': os.path.join(args.source_dir, 'title.episode.tsv\data.tsv'),
         'ratings': os.path.join(args.source_dir, 'title.ratings.tsv\data.tsv'),
     }
-    
+
     # Load data from TSV files
     loader = Loader()
     titles = loader.load_titles(importFiles['title'])
@@ -51,17 +51,21 @@ def main(args=None):
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'w', encoding='utf-8') as f:
         json.dump(ratings, f, ensure_ascii=False, separators=(',', ':'))
     
+    '''
     # Load Data from JSON files
     _logger.info("Reading IMDB Exports from JSON: %s", os.path.join(args.source_dir, 'temp'))
     with open(os.path.join(args.source_dir, 'temp', 'titles.json'), 'r', encoding='utf-8') as f:
         titles = json.load(f)
         _logger.info("     Loaded Titles")
+    '''
     with open(os.path.join(args.source_dir, 'temp', 'episodes.json'), 'r', encoding='utf-8') as f:
         episodes = json.load(f)
         _logger.info("     Loaded Episodes")
+    '''
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'r', encoding='utf-8') as f:
         ratings = json.load(f)
         _logger.info("     Loaded Ratings")
+    '''
     
     # Merge JSON files into single JSON object with shows, episodes, and ratings
     merger = Merger()
@@ -76,6 +80,7 @@ def main(args=None):
     '''
     
     # Load merged data from JSON file
+    _logger.info("Reading Merged Data from JSON: %s", os.path.join(args.source_dir, 'temp'))
     with open(os.path.join(args.source_dir, 'temp', 'merged.json'), 'r', encoding='utf-8') as f:
         merged = json.load(f)
         _logger.info("     Loaded Merged Ratings")
@@ -133,16 +138,27 @@ def main(args=None):
                 'data': json.dumps(show_obj, ensure_ascii=False, separators=(',', ':'))
             })
 
-    # Create Titles Export
-    new_dict = {}
-    for show_id, show_obj in merged.items():
-        new_dict[show_obj['t']] = show_id
-    with open(os.path.join(args.source_dir, 'temp', 'show_titles.json'), 'w', encoding='utf-8') as f:
-        json.dump(new_dict, f, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
-    with open(os.path.join(args.source_dir, 'temp', 'show_titles_readable.json'), 'w', encoding='utf-8') as f:
-        json.dump(new_dict, f, ensure_ascii=False, indent=4, sort_keys=True)
-    _logger.info("Done!")
     '''
+    # Create Search Export
+    search = []
+    for show_id, show_obj in merged.items():
+        temp_obj = {
+            't': show_obj['t'],
+            'i': show_id
+        }
+        show_title_obj = titles[show_id]
+        if 'years' in show_title_obj:
+            temp_obj['y'] = show_title_obj['years']
+        if show_id in ratings:
+            temp_obj['r'] = ratings[show_id]['rating']
+            temp_obj['v'] = ratings[show_id]['votes']
+        search.append(temp_obj)
+    print(len(search))
+    with open(os.path.join(args.source_dir, 'temp', 'search.json'), 'w', encoding='utf-8') as f:
+        json.dump(search, f, ensure_ascii=False, sort_keys=True, separators=(',', ':'))
+    with open(os.path.join(args.source_dir, 'temp', 'search_readable.json'), 'w', encoding='utf-8') as f:
+        json.dump(search, f, ensure_ascii=False, indent=4, sort_keys=True)
+    _logger.info("Done!")
     _logger.info("Exited.")
 
 

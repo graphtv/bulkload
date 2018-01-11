@@ -22,8 +22,12 @@ class Loader:
                     return_dict[id_b62] = {
                         'titleType': row['titleType'],
                         'primaryTitle': row['primaryTitle'],
-                        'originalTitle': row['originalTitle']
                     }
+                    # Add properly formatted years property for non-Episode objects
+                    if not row['titleType'].startswith('tvEpisode'):
+                        years = (row['startYear'] + '-' + row['endYear']).strip('\\N')
+                        if years != '-':
+                            return_dict[id_b62]['years'] = years
         elapsed_time = time.time() - start_time
         self._logger.info("Loaded {:,} titles in {:.2f} seconds.".format(len(return_dict), elapsed_time))
         return return_dict
