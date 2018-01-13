@@ -36,6 +36,9 @@ class Merger:
                 # Temporarily limit testing to just combining Breaking Bad episodes
                 continue
             '''
+            if show_id != 'a59y':
+                # Temporarily limit testing to just combining Breaking Bad episodes
+                continue
             if show_id not in episodes:
                 # Show has no episodes
                 continue

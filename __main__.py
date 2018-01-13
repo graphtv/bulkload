@@ -57,16 +57,13 @@ def main(args=None):
     with open(os.path.join(args.source_dir, 'temp', 'titles.json'), 'r', encoding='utf-8') as f:
         titles = json.load(f)
         _logger.info("     Loaded Titles")
-    '''
     with open(os.path.join(args.source_dir, 'temp', 'episodes.json'), 'r', encoding='utf-8') as f:
         episodes = json.load(f)
         _logger.info("     Loaded Episodes")
-    '''
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'r', encoding='utf-8') as f:
         ratings = json.load(f)
         _logger.info("     Loaded Ratings")
-    '''
-    
+
     # Merge JSON files into single JSON object with shows, episodes, and ratings
     merger = Merger()
     merged = merger.merge(titles, episodes, ratings, is_compact=True)
@@ -77,6 +74,7 @@ def main(args=None):
         # Human Readable JSON
         json.dump(merged, f, ensure_ascii=False, indent=4, sort_keys=True)
     _logger.info("Reading Merged Ratings from JSON: %s", os.path.join(args.source_dir, 'temp'))
+    '''
     '''
     
     # Load merged data from JSON file
@@ -150,6 +148,12 @@ def main(args=None):
         if 'years' in show_title_obj:
             temp_obj['y'] = show_title_obj['years']
         if show_id in ratings:
+            # BUG: There is a bug here where shows that have episodes with votes but the show
+            # itself doesn't have ratings/votes doesn't show up in the export. By the time we
+            # get here (post merge) we should only have shows which has atleast one vote in
+            # at least one episode (otherwise there would be nothing to graph). We should
+            # check if these values exist in the ratings dictionary and set them to -1 rating
+            # and 0 votes if they do not.
             temp_obj['r'] = ratings[show_id]['rating']
             temp_obj['v'] = ratings[show_id]['votes']
         search.append(temp_obj)
