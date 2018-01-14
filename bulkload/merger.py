@@ -9,6 +9,7 @@ class Merger:
         self._logger.info("Beginning episode merge...")
         if is_compact:
             k_title = 't'
+            k_years = 'y'
             k_episode_list= 'l'
             k_episode = 'e'
             k_season = 's'
@@ -16,7 +17,8 @@ class Merger:
             k_votes = 'v'
         else:
             k_title = 'title'
-            k_episode_list= 'episodes'
+            k_years = 'years'
+            k_episode_list = 'episodes'
             k_episode = 'episode'
             k_season = 'season'
             k_rating = 'rating'
@@ -36,17 +38,19 @@ class Merger:
                 # Temporarily limit testing to just combining Breaking Bad episodes
                 continue
             '''
-            if show_id != 'a59y':
-                # Temporarily limit testing to just combining Breaking Bad episodes
-                continue
             if show_id not in episodes:
                 # Show has no episodes
                 continue
             if show_id not in combined:
                 comb_show = {
                     k_title: show_obj['primaryTitle'],
-                    k_episode_list: {}
+                    k_episode_list: {},
                 }
+                if 'years' in show_obj:
+                    comb_show[k_years] = show_obj['years']
+                if show_id in ratings:
+                    comb_show[k_rating] = ratings[show_id]['rating']
+                    comb_show[k_votes] = ratings[show_id]['votes']
                 vote_count = 0
                 for episode_id, episode_obj in episodes[show_id].items():
                     comb_show[k_episode_list][episode_id] = {}

@@ -29,7 +29,6 @@ parser.add_argument(
 def main(args=None):
     _logger.info("GraphTV Bulk Load - Version 0.1")
     args = parser.parse_args()
-    '''
     _logger.info("Reading IMDB Exports from TSV: %s", args.source_dir)
     importFiles = {
         'title': os.path.join(args.source_dir, 'title.basics.tsv\data.tsv'),
@@ -42,7 +41,8 @@ def main(args=None):
     titles = loader.load_titles(importFiles['title'])
     episodes = loader.load_episodes(importFiles['episode'])
     ratings = loader.load_ratings(importFiles['ratings'])
-    
+
+    '''
     # Export TSV contents to JSON files
     with open(os.path.join(args.source_dir, 'temp', 'titles.json'), 'w', encoding='utf-8') as f:
         json.dump(titles, f, ensure_ascii=False, separators=(',', ':'))
@@ -51,7 +51,6 @@ def main(args=None):
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'w', encoding='utf-8') as f:
         json.dump(ratings, f, ensure_ascii=False, separators=(',', ':'))
     
-    '''
     # Load Data from JSON files
     _logger.info("Reading IMDB Exports from JSON: %s", os.path.join(args.source_dir, 'temp'))
     with open(os.path.join(args.source_dir, 'temp', 'titles.json'), 'r', encoding='utf-8') as f:
@@ -63,11 +62,12 @@ def main(args=None):
     with open(os.path.join(args.source_dir, 'temp', 'ratings.json'), 'r', encoding='utf-8') as f:
         ratings = json.load(f)
         _logger.info("     Loaded Ratings")
-
     '''
+
     # Merge JSON files into single JSON object with shows, episodes, and ratings
     merger = Merger()
     merged = merger.merge(titles, episodes, ratings, is_compact=True)
+    '''
     with open(os.path.join(args.source_dir, 'temp', 'merged.json'), 'w', encoding='utf-8') as f:
         # Minimized JSON
         json.dump(merged, f, ensure_ascii=False, separators=(',', ':'), sort_keys=True)
@@ -75,7 +75,6 @@ def main(args=None):
         # Human Readable JSON
         json.dump(merged, f, ensure_ascii=False, indent=4, sort_keys=True)
     _logger.info("Reading Merged Ratings from JSON: %s", os.path.join(args.source_dir, 'temp'))
-    '''
     
     # Load merged data from JSON file
     _logger.info("Reading Merged Data from JSON: %s", os.path.join(args.source_dir, 'temp'))
@@ -85,6 +84,7 @@ def main(args=None):
 
     '''
     # Send merged data to DynamoDB
+    _logger.info("Pushing to DynamoDB...")
     dynamodb = boto3.resource('dynamodb')
     table = dynamodb.Table(args.ratings_table)
     with table.batch_writer() as batch:
@@ -106,7 +106,7 @@ def main(args=None):
             if current_percent > last_percent:
                 last_percent = current_percent
                 _logger.info("%s/%s (%s%%) Complete...", cur_show_num, total_shows, current_percent)
-                
+    ''' 
     # Misc analysis output trying to gauge sizes of queried data
     size_dict = {}
     for x in range(0, 520):
